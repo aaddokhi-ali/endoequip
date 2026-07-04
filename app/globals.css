@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/*
+  EndoEquip Supply — theme tokens.
+  Pulled from the EndoDecide identity: emerald-on-navy, glassmorphism, Playfair display.
+  Emerald doubles as the Ready Hub "Green" status; red is "Red" shortage.
+*/
+
+:root {
+  --navy: #0a1428;
+  --navy-soft: #0f1d35;
+  --emerald: #10b981;
+  --emerald-soft: #34d399;
+  --gold: #f5d76e;
+  --gold-soft: #f8e6a0;
+  --red: #ef4444;
+  --red-soft: #f87171;
+}
+
+@theme inline {
+  --color-navy: var(--navy);
+  --color-navy-soft: var(--navy-soft);
+  --color-emerald: var(--emerald);
+  --color-emerald-soft: var(--emerald-soft);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-red: var(--red);
+  --color-red-soft: var(--red-soft);
+  --font-display: "Playfair Display", Georgia, serif;
+}
+
+html,
+body {
+  background: var(--navy);
+  color: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Glass surface used across cards and panels. */
+.glass {
+  background: rgb(255 255 255 / 0.08);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgb(255 255 255 / 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

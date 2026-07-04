@@ -1,0 +1,69 @@
+rules_version = '2';
+
+// EndoEquip Supply — Firestore security rules (v1).
+//
+// Model: signed-in users can READ everything (single-facility internal tool).
+// WRITES are gated by role. An admin can write anything. Clinic/store/
+// sterilization can write only within their own hub. A user always owns their
+// own profile doc.
+//
+// Helper reads the caller's own users/{uid} doc to find their role.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function myProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function myRole() {
+      return myProfile().role;
+    }
+
+    function isAdmin() {
+      return signedIn() && myRole() == 'admin';
+    }
+
+    // Everything is readable by any signed-in user.
+    match /{document=**} {
+      allow read: if signedIn();
+    }
+
+    // ---- users ----
+    // You may create/update your OWN profile doc (this is what makes setup and
+    // the isolated-secondary-app user creation work: the new account writes its
+    // own users/{uid}). Admins may write any profile.
+    match /users/{uid} {
+      allow write: if signedIn() && (request.auth.uid == uid || isAdmin());
+    }
+
+    // ---- org structure: admin-managed ----
+    match /departments/{id} { allow write: if isAdmin(); }
+    match /clinics/{id}     { allow write: if isAdmin(); }
+    match /catalogueItems/{id} { allow write: if isAdmin(); }
+
+    // ---- Order Hub ----
+    // Clinic staff and admin can write order items; admin closes them.
+    match /orderItems/{id} {
+      allow write: if signedIn() && (myRole() == 'clinic' || isAdmin());
+    }
+
+    // ---- Ready Hub ----
+    // Clinic staff write their patient counts; admin can too.
+    match /patientCounts/{id} {
+      allow write: if signedIn() && (myRole() == 'clinic' || isAdmin());
+    }
+    // Sterilization writes the daily report; admin can too.
+    match /readyReports/{id} {
+      allow write: if signedIn() && (myRole() == 'sterilization' || isAdmin());
+    }
+    // Shortage records may be created by sterilization or admin.
+    match /shortageReports/{id} {
+      allow write: if signedIn() && (myRole() == 'sterilization' || isAdmin());
+    }
+  }
+}

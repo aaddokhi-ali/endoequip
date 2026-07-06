@@ -7,6 +7,7 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  deleteDoc,
   query,
   where,
   Timestamp,
@@ -187,4 +188,31 @@ export async function fetchReadyReportsRange(
     )
   );
   return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<ReadyReport, "id">) }));
+}
+
+// ---- Sterilization batch countdown (one timer per department) ----
+
+/** Start (or restart) the countdown: batch ready N minutes from now. */
+export async function setBatchTimer(
+  departmentId: string,
+  minutesFromNow: number
+): Promise<void> {
+  const ready = new Date(Date.now() + Math.max(1, minutesFromNow) * 60000);
+  await setDoc(doc(db, "batchTimers", departmentId), {
+    readyAt: Timestamp.fromDate(ready),
+    setAt: Timestamp.now(),
+  });
+}
+
+/** Clear the countdown entirely. */
+export async function clearBatchTimer(departmentId: string): Promise<void> {
+  await deleteDoc(doc(db, "batchTimers", departmentId));
+}
+
+/** When the current batch will be ready, or null if no timer is set. */
+export async function fetchBatchTimer(departmentId: string): Promise<Date | null> {
+  const snap = await getDoc(doc(db, "batchTimers", departmentId));
+  if (!snap.exists()) return null;
+  const t = (snap.data() as { readyAt?: Timestamp }).readyAt;
+  return t ? t.toDate() : null;
 }

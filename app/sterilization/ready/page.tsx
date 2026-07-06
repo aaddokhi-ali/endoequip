@@ -6,6 +6,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import RoleGuard from "@/components/RoleGuard";
 import AppShell from "@/components/AppShell";
+import BatchCountdown from "@/components/BatchCountdown";
 import { PatientCount, ReadyReport } from "@/lib/types";
 import { buildClinicLabels } from "@/lib/orderSummary";
 import {
@@ -15,6 +16,9 @@ import {
   fetchReadyReport,
   saveReadyReport,
   computeDisplayStatus,
+  setBatchTimer,
+  clearBatchTimer,
+  fetchBatchTimer,
 } from "@/lib/data/readyApi";
 
 const DEPT = "endo";
@@ -63,19 +67,23 @@ function SterilizationReady() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
+  const [batchReadyAt, setBatchReadyAt] = useState<Date | null>(null);
+  const [customMin, setCustomMin] = useState("60");
 
   const date = dateStr(offset);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [all, rep, labels] = await Promise.all([
+    const [all, rep, labels, timer] = await Promise.all([
       fetchDeptCounts(date, DEPT),
       fetchReadyReport(date, DEPT),
       buildClinicLabels(),
+      fetchBatchTimer(DEPT),
     ]);
     setCounts(all);
     setReport(rep);
     setClinicLabels(labels);
+    setBatchReadyAt(timer);
     setProvided(rep ? String(rep.unitsProvided) : "");
     setExH(rep ? String(rep.extraHandpieces) : "0");
     setExC(rep ? String(rep.extraContraAngles) : "0");
@@ -111,6 +119,16 @@ function SterilizationReady() {
         ? "Saved — day is Green, all patients covered."
         : "Saved — day is RED. A shortage report has been recorded."
     );
+  }
+
+  async function startTimer(minutes: number) {
+    await setBatchTimer(DEPT, minutes);
+    setBatchReadyAt(await fetchBatchTimer(DEPT));
+  }
+
+  async function stopTimer() {
+    await clearBatchTimer(DEPT);
+    setBatchReadyAt(null);
   }
 
   function exportShortagePdf() {
@@ -192,6 +210,52 @@ function SterilizationReady() {
       </div>
 
       <UnitDefinitionNote />
+
+      <section className="glass rounded-3xl p-5">
+        <h2 className="mb-1 text-lg font-semibold text-white" style={{ fontFamily: "var(--font-display)" }}>
+          Batch countdown
+        </h2>
+        <p className="mb-3 text-xs text-slate-400">
+          Tell clinics when the next sterilization cycle finishes.
+        </p>
+        {batchReadyAt && (
+          <div className="mb-3">
+            <BatchCountdown readyAt={batchReadyAt} />
+          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {[30, 45, 60, 90].map((min) => (
+            <button
+              key={min}
+              onClick={() => startTimer(min)}
+              className="rounded-lg border border-white/15 px-4 py-1.5 text-sm text-slate-200 transition hover:border-emerald/50 hover:text-emerald"
+            >
+              {min} min
+            </button>
+          ))}
+          <input
+            type="number"
+            min={1}
+            value={customMin}
+            onChange={(e) => setCustomMin(e.target.value)}
+            className="w-20 rounded-lg border border-white/15 bg-(--color-navy) px-2 py-1.5 text-center text-sm text-white outline-none focus:border-emerald/60"
+          />
+          <button
+            onClick={() => startTimer(Math.max(1, Number(customMin) || 60))}
+            className="rounded-lg bg-emerald px-4 py-1.5 text-sm font-semibold text-(--color-navy) transition hover:bg-(--color-emerald-soft)"
+          >
+            Start
+          </button>
+          {batchReadyAt && (
+            <button
+              onClick={stopTimer}
+              className="rounded-lg border border-white/15 px-4 py-1.5 text-sm text-slate-400 transition hover:text-white"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </section>
 
       <div className="flex gap-2">
         {DAY_TABS.map((t) => (

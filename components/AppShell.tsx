@@ -1,7 +1,7 @@
 // components/AppShell.tsx
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
@@ -46,6 +46,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { appUser } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // Close the mobile menu whenever the route changes.
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   async function handleSignOut() {
     await signOut(auth);
@@ -57,8 +63,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-(--color-navy) text-white">
       <header className="border-b border-white/10 bg-black/30 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
-          <div className="flex items-center gap-6">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6">
+          <div className="flex items-center gap-4 sm:gap-6">
             <button
               onClick={() => appUser && router.push(NAV_BY_ROLE[appUser.role][0].href)}
               className="flex items-center gap-2"
@@ -70,6 +76,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               </span>
             </button>
 
+            {/* Desktop nav */}
             <nav className="hidden items-center gap-1 sm:flex">
               {links.map((l, i) => {
                 const active = pathname === l.href;
@@ -90,7 +97,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </nav>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <p className="hidden text-xs text-slate-400 md:block">
+              {new Date().toLocaleDateString("en-GB", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+              })}
+            </p>
             {appUser && (
               <div className="hidden text-right sm:block">
                 <p className="text-sm font-medium text-white">{appUser.displayName}</p>
@@ -101,17 +115,73 @@ export default function AppShell({ children }: { children: ReactNode }) {
             )}
             <button
               onClick={handleSignOut}
-              className="rounded-lg border border-white/15 px-3 py-1.5 text-sm text-slate-300 transition hover:border-white/30 hover:text-white"
+              className="hidden rounded-lg border border-white/15 px-3 py-1.5 text-sm text-slate-300 transition hover:border-white/30 hover:text-white sm:block"
+            >
+              Sign out
+            </button>
+
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/15 text-xl text-slate-200 sm:hidden"
+            >
+              {menuOpen ? "✕" : "☰"}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile menu panel */}
+        {menuOpen && (
+          <div className="border-t border-white/10 px-4 pb-4 pt-2 sm:hidden">
+            {appUser && (
+              <div className="mb-2 flex items-center justify-between px-1 py-2">
+                <div>
+                  <p className="text-sm font-medium text-white">{appUser.displayName}</p>
+                  <p className="text-[11px] uppercase tracking-wide text-emerald">
+                    {ROLE_LABEL[appUser.role]}
+                  </p>
+                </div>
+                <p className="text-xs text-slate-400">
+                  {new Date().toLocaleDateString("en-GB", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                  })}
+                </p>
+              </div>
+            )}
+            <nav className="space-y-1">
+              {links.map((l, i) => {
+                const active = pathname === l.href;
+                return (
+                  <button
+                    key={`m-${l.href}-${i}`}
+                    onClick={() => router.push(l.href)}
+                    className={`block w-full rounded-lg px-3 py-3 text-left text-base transition ${
+                      active
+                        ? "bg-emerald/15 font-semibold text-emerald"
+                        : "text-slate-200 hover:bg-white/5"
+                    }`}
+                  >
+                    {l.label}
+                  </button>
+                );
+              })}
+            </nav>
+            <button
+              onClick={handleSignOut}
+              className="mt-3 w-full rounded-lg border border-white/15 px-3 py-3 text-base text-slate-300 transition hover:text-white"
             >
               Sign out
             </button>
           </div>
-        </div>
+        )}
       </header>
 
       <ShortageAlert />
 
-      <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">{children}</main>
     </div>
   );
 }

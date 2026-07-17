@@ -19,12 +19,16 @@ const NAV_BY_ROLE: Record<Role, NavLink[]> = {
   clinic: [
     { label: "Order Hub", href: "/clinic/order" },
     { label: "Ready Hub", href: "/clinic/ready" },
+    { label: "Devices", href: "/clinic/devices" },
   ],
   store: [
     { label: "Orders", href: "/store/orders" },
     { label: "Catalogue", href: "/store/catalogue" },
+    { label: "Devices", href: "/store/devices" },
   ],
-  sterilization: [{ label: "Ready Hub", href: "/sterilization/ready" }],
+  sterilization: [
+    { label: "Ready Hub", href: "/sterilization/ready" },
+  ],
   admin: [
     { label: "Dashboard", href: "/admin/dashboard" },
     { label: "Orders", href: "/admin/orders" },
@@ -32,7 +36,9 @@ const NAV_BY_ROLE: Record<Role, NavLink[]> = {
     { label: "Insights", href: "/admin/insights" },
     { label: "Setup", href: "/admin/users" },
     { label: "Catalogue", href: "/admin/catalogue" },
+    { label: "Devices", href: "/admin/devices" },
   ],
+  maintenance: [{ label: "Devices", href: "/maintenance/devices" }],
 };
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -40,6 +46,7 @@ const ROLE_LABEL: Record<Role, string> = {
   store: "Store",
   sterilization: "Sterilization",
   admin: "Admin",
+  maintenance: "Maintenance",
 };
 
 export default function AppShell({ children }: { children: ReactNode }) {

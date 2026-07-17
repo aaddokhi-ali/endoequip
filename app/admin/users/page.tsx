@@ -15,12 +15,13 @@ import {
   createClinic,
 } from "@/lib/data/adminApi";
 
-const ROLES: Role[] = ["clinic", "store", "sterilization", "admin"];
+const ROLES: Role[] = ["clinic", "store", "sterilization", "admin", "maintenance"];
 const ROLE_LABEL: Record<Role, string> = {
   clinic: "Clinic",
   store: "Store",
   sterilization: "Sterilization",
   admin: "Admin",
+  maintenance: "Maintenance",
 };
 
 export default function AdminUsersPage() {

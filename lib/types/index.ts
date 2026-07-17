@@ -4,7 +4,7 @@
 
 import { Timestamp } from "firebase/firestore";
 
-export type Role = "clinic" | "store" | "sterilization" | "admin";
+export type Role = "clinic" | "store" | "sterilization" | "admin" | "maintenance";
 
 /** A grouping unit. One at launch (Endodontics); schema supports many. */
 export interface Department {
@@ -118,10 +118,56 @@ export interface ShortageReport {
 // Complete units only; partials never count. One unit per patient.
 export const UNIT_COMPONENTS = ["cassette", "high-speed", "contra-angle", "hook"] as const;
 
+// ---- Devices (equipment register) ----
+// Every clinic's physical devices, with serial number and working status.
+// Visible to all roles; editable by all — device status causes real management
+// headaches, so wide visibility/editing is the point.
+
+/** The standard endodontic device types, plus "Other" for anything else. */
+export const DEVICE_TYPES = [
+  "PC & X-ray Sensor",
+  "Rotary Device",
+  "Obturation Heating Pen",
+  "Warm Gutta-Percha Delivery Device",
+  "Apex Locator",
+  "Irrigation Activator",
+  "Other",
+] as const;
+
+export type DeviceType = (typeof DEVICE_TYPES)[number];
+
+/** 3-way device status. */
+export type DeviceStatus = "working" | "needs_parts" | "not_working";
+
+export const DEVICE_STATUS_LABEL: Record<DeviceStatus, string> = {
+  working: "Working",
+  needs_parts: "Working — needs parts",
+  not_working: "Not working",
+};
+
+export interface Device {
+  id: string;
+  departmentId: string;   // "endo" today; ready for more
+  clinicId: string;       // which clinic this device sits in
+  type: DeviceType;       // one of DEVICE_TYPES
+  customName: string;     // the typed name when type === "Other" (else "")
+  serialNumber: string;
+  status: DeviceStatus;
+  notes: string;          // free text, optional
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+}
+
+/** Display name: the custom name for "Other" devices, otherwise the type. */
+export function deviceName(d: Device): string {
+  return d.type === "Other" && d.customName.trim() ? d.customName.trim() : d.type;
+}
+
 // ---- Where each role lands after login ----
 export const ROLE_HOME: Record<Role, string> = {
   clinic: "/clinic/dashboard",
   store: "/store/dashboard",
   sterilization: "/sterilization/dashboard",
   admin: "/admin/dashboard",
+  maintenance: "/maintenance/devices",
 };

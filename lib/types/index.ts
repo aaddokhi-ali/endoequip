@@ -171,3 +171,109 @@ export const ROLE_HOME: Record<Role, string> = {
   admin: "/admin/dashboard",
   maintenance: "/maintenance/devices",
 };
+
+// ---- Materials (per-clinic consumables status) ----
+// One doc per clinic in the "materials" collection (doc id = clinicId).
+// statuses is a map keyed by MaterialItem.key; a missing key means "na".
+// Editable by the clinic itself + admin; store is view-only.
+
+export type MaterialStatus = "na" | "shortage" | "available";
+
+export const MATERIAL_STATUS_LABEL: Record<MaterialStatus, string> = {
+  na: "N/A",
+  shortage: "Shortage",
+  available: "Available",
+};
+
+export interface MaterialItem {
+  key: string;    // stable Firestore map key — NEVER change once live
+  label: string;
+}
+
+export interface MaterialSection {
+  key: string;
+  title: string;
+  items: MaterialItem[];
+}
+
+/** The fixed department catalog. Add rows here; UI and reports follow automatically. */
+export const MATERIAL_SECTIONS: MaterialSection[] = [
+  {
+    key: "hand_files",
+    title: "Hand Files",
+    items: [
+      { key: "hand_c_cplus_pilot", label: "C / C+ / Pilot Files" },
+      { key: "glide_k06", label: "Glide Path K-File 06" },
+      { key: "glide_k08", label: "Glide Path K-File 08" },
+      { key: "glide_k10", label: "Glide Path K-File 10" },
+      { key: "k15", label: "K-File 15" },
+      { key: "k20", label: "K-File 20" },
+      { key: "k25", label: "K-File 25" },
+      { key: "k30", label: "K-File 30" },
+      { key: "k35", label: "K-File 35" },
+      { key: "k40", label: "K-File 40" },
+      { key: "h15", label: "H-File 15" },
+      { key: "h20", label: "H-File 20" },
+      { key: "h25", label: "H-File 25" },
+      { key: "h30", label: "H-File 30" },
+      { key: "h35", label: "H-File 35" },
+      { key: "h40", label: "H-File 40" },
+    ],
+  },
+  {
+    key: "rotary",
+    title: "Rotary Files",
+    items: [{ key: "rotary_kit", label: "Rotary Files (Kit)" }],
+  },
+  {
+    key: "obturation",
+    title: "Gutta-Percha & Paper Points",
+    items: [
+      { key: "gutta_percha", label: "Gutta-Percha Points" },
+      { key: "paper_points", label: "Paper Points" },
+    ],
+  },
+  {
+    key: "medicament",
+    title: "Calcium Hydroxide (Intra-canal Medicament)",
+    items: [
+      { key: "caoh_water", label: "Water-based" },
+      { key: "caoh_powder", label: "Powder" },
+    ],
+  },
+  {
+    key: "sealer",
+    title: "Root Canal Sealer",
+    items: [
+      { key: "sealer_cs", label: "Calcium Silicate–based Sealer" },
+      { key: "sealer_resin", label: "Resin-based Sealer" },
+      { key: "sealer_other", label: "Other Sealer" },
+    ],
+  },
+  {
+    key: "temp_filling",
+    title: "Temporary Filling",
+    items: [{ key: "temp_filling", label: "Temporary Filling" }],
+  },
+];
+
+/** Flat list of every material item, in display order (reports use this). */
+export const ALL_MATERIAL_ITEMS: MaterialItem[] = MATERIAL_SECTIONS.flatMap((s) => s.items);
+
+/** One doc per clinic. Doc id MUST equal clinicId. */
+export interface ClinicMaterials {
+  id: string;                                // equals clinicId
+  departmentId: string;
+  clinicId: string;
+  statuses: Record<string, MaterialStatus>;  // MaterialItem.key -> status; missing = "na"
+  updatedAt?: Timestamp;
+  updatedBy?: string;                        // displayName of the last editor
+}
+
+/** Read one item's status, defaulting to "na" when unset. */
+export function materialStatus(
+  m: ClinicMaterials | null | undefined,
+  itemKey: string
+): MaterialStatus {
+  return m?.statuses?.[itemKey] ?? "na";
+}

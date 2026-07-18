@@ -26,6 +26,7 @@ import {
   monthLabel,
 } from "@/lib/data/orderApi";
 import { indexCatalogue } from "@/lib/orderSummary";
+import ReadinessInsight from "@/components/ReadinessInsight";
 
 const DEPT = "endo";
 const MONTHS_BACK = 6;
@@ -388,6 +389,9 @@ function Insights() {
           </div>
         )}
       </section>
+
+      {/* Clinic readiness (kit-driver demand model) */}
+      <ReadinessInsight departmentId={DEPT} />
     </div>
   );
 }
